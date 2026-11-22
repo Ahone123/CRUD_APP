@@ -1,5 +1,25 @@
 {
+  "workspaces": [
+    "backend"
+  ],
   "dependencies": {
-    "axios": "^1.21.1"
+    "@prisma/composer": "0.38.0",
+    "@prisma/composer-prisma-cloud": "0.38.0",
+    "@prisma/orm-postgres": "8.0.0-rc.23",
+    "axios": "^1.21.1",
+    "effect": "4.0.5"
+  },
+  "devDependencies": {
+    "prisma": "8.0.0-rc.33"
+  },
+  "overrides": {
+    "@effect/platform-bun": "4.0.5",
+    "@effect/platform-node": "4.0.5",
+    "@effect/platform-node-shared": "4.0.5",
+    "@effect/vitest": "4.0.5",
+    "effect": "4.0.5"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

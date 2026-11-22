@@ -4,12 +4,16 @@ import prisma from "../lib/prisma.js";
 
 const router = express.Router();
 
+// Prisma 8 surfaces unique-constraint failures as the Postgres SQLSTATE 23505
+// (on the normalized error or its pg cause) instead of the old P2002 code.
+function isUniqueViolation(error) {
+  return error?.sqlState === "23505" || error?.cause?.code === "23505" || error?.code === "23505";
+}
+
 // GET all users
 router.get("/", async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      orderBy: { id: "desc" },
-    });
+    const users = await prisma.orm.public.User.orderBy((u) => u.id.desc()).all();
 
     res.json(users);
   } catch (error) {
@@ -29,19 +33,17 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const user = await prisma.user.create({
-      data: {
-        name: name.trim(),
-        email: email.trim(),
-        role: role?.trim() || "USER",
-      },
+    const user = await prisma.orm.public.User.create({
+      name: name.trim(),
+      email: email.trim(),
+      role: role?.trim() || "USER",
     });
 
     res.status(201).json(user);
   } catch (error) {
     console.error(error);
 
-    if (error.code === "P2002") {
+    if (isUniqueViolation(error)) {
       return res.status(409).json({ message: "Email already exists" });
     }
 
@@ -65,24 +67,21 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    const user = await prisma.user.update({
-      where: { id },
-      data: {
-        name: name.trim(),
-        email: email.trim(),
-        role: role?.trim() || "USER",
-      },
+    const user = await prisma.orm.public.User.where({ id }).update({
+      name: name.trim(),
+      email: email.trim(),
+      role: role?.trim() || "USER",
     });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     res.json(user);
   } catch (error) {
     console.error(error);
 
-    if (error.code === "P2025") {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (error.code === "P2002") {
+    if (isUniqueViolation(error)) {
       return res.status(409).json({ message: "Email already exists" });
     }
 
@@ -99,17 +98,15 @@ router.delete("/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
-    await prisma.user.delete({
-      where: { id },
-    });
+    const user = await prisma.orm.public.User.where({ id }).delete();
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error(error);
-
-    if (error.code === "P2025") {
-      return res.status(404).json({ message: "User not found" });
-    }
 
     res.status(500).json({ message: "Failed to delete user" });
   }
