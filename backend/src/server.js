@@ -1,7 +1,7 @@
 import userRoutes from "./routes/userRoutes.js";
 import express from "express";
 import cors from "cors";
-import "dotenv/config";
+import service from "./service.mjs";
 
 
 const app = express();
@@ -18,8 +18,8 @@ app.get("/", (req, res) => {
   res.send("User Management API is running!");
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = service.port();
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
